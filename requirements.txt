@@ -1,0 +1,25 @@
+# Core FastAPI dependencies
+fastapi>=0.100.0
+uvicorn>=0.20.0
+python-multipart
+jinja2
+python-dotenv
+requests
+
+# AI/ML Libraries - Tested and working versions
+langchain>=0.1.0
+langchain-openai
+langchain-groq
+langchain-huggingface
+langchain-community
+
+# Vector Database - In-Memory Mode (no Docker needed)
+qdrant-client
+
+# Document Processing - Reliable PDF loader
+pypdf
+
+# Required for embeddings (automatically installed with langchain-huggingface)
+# transformers
+# torch
+# sentence-transformers 

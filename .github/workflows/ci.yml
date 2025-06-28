@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Test imports and basic functionality
+      run: |
+        python -c "import app; print('✅ app.py imports successfully')"
+        python -c "import main; print('✅ main.py imports successfully')"
+        python -c "import finance_chat; print('✅ finance_chat.py imports successfully')"
+
+    - name: Test FastAPI app structure
+      run: |
+        python -c "from app import app; print('✅ FastAPI app created successfully')"
+
+    - name: Validate environment template
+      run: |
+        test -f env_example.txt && echo "✅ Environment template exists" || exit 1
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+
+    - name: Run security checks with bandit
+      run: |
+        bandit -r . -x "*/venv/*,*/env/*" --format json | tee bandit-report.json || true
+        
+    - name: Check for known security vulnerabilities
+      run: |
+        safety check --json | tee safety-report.json || true
+
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check documentation files
+      run: |
+        test -f README.md && echo "✅ README.md exists" || exit 1
+        test -f LICENSE && echo "✅ LICENSE exists" || exit 1
+        test -f CONTRIBUTING.md && echo "✅ CONTRIBUTING.md exists" || exit 1
+        test -f CHANGELOG.md && echo "✅ CHANGELOG.md exists" || exit 1
+
+    - name: Validate README content
+      run: |
+        grep -q "Finance Chat Application" README.md && echo "✅ README has project title" || exit 1
+        grep -q "Installation" README.md && echo "✅ README has installation instructions" || exit 1
+        grep -q "Usage" README.md && echo "✅ README has usage instructions" || exit 1
+
+ 
