@@ -15,6 +15,7 @@ langchain-community
 
 # Vector Database - In-Memory Mode (no Docker needed)
 qdrant-client
+langchain-qdrant
 
 # Document Processing - Reliable PDF loader
 pypdf

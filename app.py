@@ -6,10 +6,13 @@ from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
 import tempfile
 
+# Set environment variable to avoid tokenizers warning
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA, LLMChain
+from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
@@ -17,7 +20,7 @@ from langchain.tools import Tool
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
-from langchain_community.vectorstores import Qdrant
+from langchain_qdrant import QdrantVectorStore
 from pathlib import Path
 
 app = FastAPI(title="Finance Chat Application", description="AI-powered finance document analysis")
@@ -73,11 +76,11 @@ def create_or_refresh_store(collection_name: str, file_bytes: bytes, filename: s
             vectors_config=VectorParams(size=384, distance=Distance.COSINE)  # BGE model dimension
         )
 
-        # Create Qdrant vectorstore
-        store = Qdrant(
+        # Create Qdrant vectorstore using the new langchain_qdrant package
+        store = QdrantVectorStore(
             client=qdrant_client,
             collection_name=collection_name,
-            embeddings=embedder
+            embedding=embedder
         )
         
         # Add documents to the store
@@ -105,10 +108,10 @@ def load_qdrant_store(collection_name: str):
                 raise ValueError(f"Collection '{collection_name}' not found. Available collections: {list(in_memory_collections.keys())}")
             
             # Recreate store reference if it exists in client but not in our dict
-            store = Qdrant(
+            store = QdrantVectorStore(
                 client=qdrant_client,
                 collection_name=collection_name,
-                embeddings=embedder
+                embedding=embedder
             )
             in_memory_collections[collection_name] = {"store": store}
         
@@ -182,23 +185,29 @@ def create_pdf_qa_tool(store, name="PDF_QA"):
         raise Exception(f"Failed to create PDF QA tool: {str(e)}")
 
 def create_summary_tool(store, name="PDF_Summary"):
-    """Create PDF summary tool"""
+    """Create PDF summary tool using modern RunnableSequence pattern"""
     try:
         prompt = PromptTemplate.from_template(
             "Summarize the following financial document content in a clear and concise manner:\n\n{content}\n\nSummary:"
         )
-        chain = LLMChain(llm=get_llm(), prompt=prompt)
+        # Modern approach: prompt | llm instead of deprecated LLMChain
+        chain = prompt | get_llm()
 
         def summarize(query: str) -> str:
             try:
-                # Get relevant documents for summary
-                docs = store.as_retriever(search_kwargs={"k": 5}).get_relevant_documents("summary overview content")
+                # Get relevant documents for summary using modern invoke method
+                retriever = store.as_retriever(search_kwargs={"k": 5})
+                docs = retriever.invoke("summary overview content")
                 if not docs:
                     return "No content available for summary"
                 
                 full_text = "\n\n".join(d.page_content for d in docs[:3])  # Limit content
-                result = chain.run({"content": full_text})
-                return result
+                # Modern invoke method instead of deprecated run
+                result = chain.invoke({"content": full_text})
+                # Handle both string and AIMessage responses
+                if hasattr(result, 'content'):
+                    return result.content
+                return str(result)
             except Exception as e:
                 return f"Error generating summary: {str(e)}"
 
