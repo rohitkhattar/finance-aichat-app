@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Latest-00a393.svg)](https://fastapi.tiangolo.com/)
-[![GitHub stars](https://img.shields.io/github/stars/your-username/finance-chatapp.svg)](https://github.com/your-username/finance-chatapp/stargazers)
-[![GitHub issues](https://img.shields.io/github/issues/your-username/finance-chatapp.svg)](https://github.com/your-username/finance-chatapp/issues)
-[![CI](https://github.com/your-username/finance-chatapp/workflows/CI/badge.svg)](https://github.com/your-username/finance-chatapp/actions)
+[![GitHub stars](https://img.shields.io/github/stars/rohitkhattar/finance-aichat-app.svg)](https://github.com/rohitkhattar/finance-aichat-app/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/rohitkhattar/finance-aichat-app.svg)](https://github.com/rohitkhattar/finance-aichat-app/issues)
+[![CI](https://github.com/rohitkhattar/finance-aichat-app/workflows/CI/badge.svg)](https://github.com/rohitkhattar/finance-aichat-app/actions)
 
 An AI-powered finance document analysis application built with **FastAPI**, **LangChain**, and **Qdrant in-memory**. Upload PDF documents and chat with them using natural language queries - no Docker required!
 
@@ -54,7 +54,7 @@ graph TB
 | Component | Technology | Purpose |
 |-----------|------------|---------|
 | **Web Framework** | FastAPI | REST API endpoints, auto documentation |
-| **Vector Database** | Qdrant (In-Memory) | Vector storage and similarity search |
+| **Vector Database** | langchain-qdrant | Vector storage and similarity search |
 | **Document Loader** | PyPDFLoader | PDF text extraction and parsing |
 | **Embeddings** | HuggingFace BGE-small | Text-to-vector conversion (384 dimensions) |
 | **LLM Integration** | Groq/OpenAI | Natural language processing and generation |
@@ -74,23 +74,28 @@ graph TB
 ### **Installation Steps**
 
 ```bash
-# 1. Navigate to the finance-chatapp directory
-cd finance-chatapp
+# 1. Clone the repository and navigate to the directory
+git clone https://github.com/rohitkhattar/finance-aichat-app.git
+cd finance-aichat-app
 
-# 2. Install dependencies
+# 2. Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 3. Set up environment variables
+# 4. Set up environment variables
 cp env_example.txt .env
 
-# 4. Edit .env file and add your API key
+# 5. Edit .env file and add your API key
 # Option 1: Groq (Free and Fast)
 GROQ_API_KEY=your_groq_api_key_here
 
 # Option 2: OpenAI (Paid)
 # OPENAI_API_KEY=your_openai_api_key_here
 
-# 5. Start the application
+# 6. Start the application
 python main.py
 ```
 
@@ -242,6 +247,7 @@ def build_agent(pdf_tool, summary_tool):
 
 ```
 finance-chatapp/
+├── .venv/                  # Isolated Python virtual environment
 ├── app.py                 # Main FastAPI application
 ├── main.py               # Application entry point
 ├── finance_chat.py       # Command-line client interface
@@ -275,7 +281,10 @@ python main.py
 
 #### **Import Errors**
 ```bash
-# Reinstall dependencies
+# Ensure your virtual environment is active
+source .venv/bin/activate
+
+# Reinstall dependencies inside the virtual environment
 pip install -r requirements.txt --upgrade
 ```
 
@@ -302,14 +311,16 @@ curl http://localhost:8000/
 curl http://localhost:8000/collections
 
 # Test client functionality
+source .venv/bin/activate
 python finance_chat.py list
 ```
 
 ### **Manual Testing Workflow**
-1. Start server: `python main.py`
-2. Upload document: `python finance_chat.py upload sample.pdf`
-3. Ask question: `python finance_chat.py chat collection_name "test query"`
-4. Check web interface: http://localhost:8000/docs
+1. Activate environment: `source .venv/bin/activate`
+2. Start server: `python main.py`
+3. Upload document: `python finance_chat.py upload sample.pdf`
+4. Ask question: `python finance_chat.py chat collection_name "test query"`
+5. Check web interface: http://localhost:8000/docs
 
 ## 🤝 Contributing
 
