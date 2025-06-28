@@ -32,10 +32,10 @@ graph TB
     C --> D[HuggingFace Embeddings]
     D --> E[Qdrant In-Memory]
     
-    F[User Query] --> G[Query Router]
+    F[User Query] --> G[Keyword Router]
     G --> H{Query Type}
-    H -->|QA| I[Retrieval QA Chain]
-    H -->|Summary| J[Summary Chain]
+    H -->|QA| I[Legacy RetrievalQA]
+    H -->|Summary| J[Modern LCEL Chain]
     
     I --> K[Vector Search]
     J --> K
@@ -46,6 +46,7 @@ graph TB
     
     style E fill:#ff9999
     style M fill:#99ccff
+    style J fill:#aaffaa
 ```
 
 ## 🔧 Technical Components
@@ -226,15 +227,28 @@ curl "http://localhost:8000/collections"
 
 ### **Query Routing Logic**
 ```python
-def build_agent(pdf_tool, summary_tool):
-    def agent_logic(message: str) -> str:
-        message_lower = message.lower()
-        summary_keywords = ["summary", "summarize", "overview", "general", "what is this about"]
-        
-        if any(keyword in message_lower for keyword in summary_keywords):
-            return summary_tool.run(message)  # Route to summarization
-        else:
-            return pdf_tool.run(message)      # Route to Q&A
+# The agent uses a simple keyword-based router.
+# The summary tool has been modernized to use LangChain Expression Language (LCEL).
+
+# Simplified view of the summary chain:
+summary_prompt = PromptTemplate.from_template("Summarize: {content}")
+summary_chain = summary_prompt | llm
+
+# Simplified view of the QA chain (still uses legacy RetrievalQA):
+qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=retriever)
+
+def agent_logic(message: str) -> str:
+    message_lower = message.lower()
+    summary_keywords = ["summary", "summarize", "overview"]
+    
+    if any(keyword in message_lower for keyword in summary_keywords):
+        # The summary tool invokes an LCEL chain.
+        docs = retriever.invoke("summary content")
+        content = "\\n".join(d.page_content for d in docs)
+        return summary_chain.invoke({"content": content})
+    else:
+        # The QA tool invokes a legacy chain.
+        return qa_chain.invoke({"query": message})
 ```
 
 ### **Error Handling**
